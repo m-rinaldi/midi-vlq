@@ -1,25 +1,102 @@
 use crate::MidiVlq;
+use super::VlqBuf;
+use super::ux::{U7, U14, U21, U28};
 
-use super::{VlqBuf, u7::U7};
-
-fn encode_ending_byte(val: U7) -> u8 {
-    val.into()
+fn infallibly_encode(val: u16) -> MidiVlq {
+    if val <= U7::MAX as u16 {
+        // one byte
+        MidiVlq(encode_u7(U7::try_from(val as u8).unwrap()))
+    } else if val <= U14::MAX as u16 {
+        // two bytes
+        MidiVlq(encode_u14(U14::try_from(val as u16).unwrap()))
+    } else {
+        // three bytes
+        MidiVlq(encode_u21(U21::try_from(val as u32).unwrap()))
+    }
 }
 
-fn encode_nonending_byte(val: U7) -> u8 {
-    0b1000_0000 | Into::<u8>::into(val)
+fn encode(val: u32) -> Option<MidiVlq> {
+    if let Ok(val) = <u16 as TryFrom<u32>>::try_from(val) {
+        // one or two bytes
+        Some(infallibly_encode(val as u16))
+    } else if val <= U21::MAX {
+        // three bytes
+        Some(MidiVlq(encode_u21(U21::try_from(val as u32).unwrap())))
+    } else if val <= U28::MAX {
+        // four bytes
+        Some(MidiVlq(encode_u28(U28::try_from(val as u32).unwrap())))
+    } else {
+        // too large
+        None
+    }
 }
+
+fn encode_u7(val: U7) -> VlqBuf {
+    let buf = VlqBuf::from_array([val.into()]);
+    debug_assert_eq!(buf.len(), 1);
+    return buf;
+}
+
+const FOLLOW_UP_BIT: u8 = 0b1000_0000;
+const SEVEN_LOWEST_BITS: u8 = 0b0111_1111;
+
+fn encode_u14(val: U14) -> VlqBuf {
+    let val: u16 = val.into();
+
+    let msb = (val >> 7) as u8 | FOLLOW_UP_BIT;
+    let lsb = val as u8 & SEVEN_LOWEST_BITS;
+    
+    let buf = VlqBuf::from_array([msb, lsb]);
+    debug_assert_eq!(buf.len(), 2);
+    return buf;
+}
+
+fn encode_u21(val: U21) -> VlqBuf {
+    let val: u32 = val.into();
+
+    let b0 = (val >> 14) as u8 | FOLLOW_UP_BIT;
+    let b1 = (val >>  7) as u8 | FOLLOW_UP_BIT;
+    let b2 = val as u8 & SEVEN_LOWEST_BITS;
+
+    let buf = VlqBuf::from_array([b0, b1, b2]);
+    debug_assert_eq!(buf.len(), 3);
+    return buf;
+}
+
+fn encode_u28(val: U28) -> VlqBuf {
+    let val: u32 = val.into();
+
+    let b0 = (val >> 21) as u8 | FOLLOW_UP_BIT;
+    let b1 = (val >> 14) as u8 | FOLLOW_UP_BIT;
+    let b2 = (val >>  7) as u8 | FOLLOW_UP_BIT;
+    let b3 = val as u8 & SEVEN_LOWEST_BITS;
+
+    let buf = VlqBuf::from_array([b0, b1, b2, b3]);
+    debug_assert_eq!(buf.len(), 4);
+    return buf;
+}
+
 
 impl From<u8> for MidiVlq {
     fn from(val: u8) -> Self {
-        if val <= 127 {
-            return MidiVlq(VlqBuf::from_array([val]));
-        }
+        infallibly_encode(val as u16)
+    }
+}
 
-        debug_assert!(0b1000_0000 & val != 0);
-        let msb = encode_nonending_byte(U7::try_from(1).unwrap());
-        let lsb = encode_ending_byte(U7::try_from(0b0111_1111 & val).unwrap());
-        MidiVlq(VlqBuf::from_array([msb, lsb]))
+impl From<u16> for MidiVlq {
+    fn from(val: u16) -> Self {
+        infallibly_encode(val)
+    }
+}
+
+impl TryFrom<u32> for MidiVlq {
+    type Error = String;
+
+    fn try_from(val: u32) -> Result<Self, Self::Error> {
+        match encode(val) {
+            None => Err("value too large".to_owned()),
+            Some(vlq) => Ok(vlq),
+        }
     }
 }
 
