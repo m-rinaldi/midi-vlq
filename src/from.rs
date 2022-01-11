@@ -24,7 +24,7 @@ impl From<u8> for MidiVlq {
 }
 
 impl From<MidiVlq> for u32 {
-    fn from(vlq: MidiVlq) -> u32 {
+    fn from(_vlq: MidiVlq) -> u32 {
         todo!()
     }
 }
@@ -33,7 +33,7 @@ impl From<MidiVlq> for u32 {
 mod tests {
     use super::*;
     #[test]
-    fn test_from_u8_single() {
+    fn test_from_u8_single_byte() {
         let vlq = MidiVlq::from(0_u8);
         assert_eq!(vlq.len(), 1);
         assert_eq!(vlq.as_ref(), [0]);
@@ -41,5 +41,24 @@ mod tests {
         let vlq = MidiVlq::from(127_u8);
         assert_eq!(vlq.len(), 1);
         assert_eq!(vlq.as_ref(), [127]);
+
+        let vlq = MidiVlq::from(1_u8);
+        assert_eq!(vlq.len(), 1);
+        assert_eq!(vlq.as_ref(), [1]);
+
+        let vlq = MidiVlq::from(0x0f_u8);
+        assert_eq!(vlq.len(), 1);
+        assert_eq!(vlq.as_ref(), [0x0f]);
+    }
+
+    #[test]
+    fn test_from_u8_two_bytes() {
+        let vlq = MidiVlq::from(128_u8);
+        assert_eq!(vlq.len(), 2);
+        assert_eq!(vlq.as_ref(), [0b1000_0001, 0]);
+
+        let vlq = MidiVlq::from(255_u8);
+        assert_eq!(vlq.len(), 2);
+        assert_eq!(vlq.as_ref(), [0b1000_0001, 0b0111_1111]);
     }
 }
