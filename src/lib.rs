@@ -9,6 +9,7 @@ type VlqBuf = LocalVec<u8, 4>;
 pub struct MidiVlq(VlqBuf);
 
 impl MidiVlq {
+    /// length in bytes
     pub fn len(&self) -> usize {
         self.0.len()
     }

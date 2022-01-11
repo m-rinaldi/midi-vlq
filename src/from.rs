@@ -45,7 +45,7 @@ fn encode_u14(val: U14) -> VlqBuf {
 
     let msb = (val >> 7) as u8 | FOLLOW_UP_BIT;
     let lsb = val as u8 & SEVEN_LOWEST_BITS;
-    
+
     let buf = VlqBuf::from_array([msb, lsb]);
     debug_assert_eq!(buf.len(), 2);
     return buf;
@@ -137,5 +137,40 @@ mod tests {
         let vlq = MidiVlq::from(255_u8);
         assert_eq!(vlq.len(), 2);
         assert_eq!(vlq.as_ref(), [0b1000_0001, 0b0111_1111]);
+    }
+
+    #[test]
+    fn test_from_u16_two_bytes() {
+        let vlq = MidiVlq::from(256u16);
+        assert_eq!(vlq.len(), 2);
+        assert_eq!(vlq.as_ref(), [0b1000_0010, 0]);
+
+        let vlq = MidiVlq::from(511u16);
+        assert_eq!(vlq.len(), 2);
+        assert_eq!(vlq.as_ref(), [0b1000_0011, 0b0111_1111]);
+
+        let vlq = MidiVlq::from(16_383u16);
+        assert_eq!(vlq.len(), 2);
+        assert_eq!(vlq.as_ref(), [0b1111_1111, 0b0111_1111]);
+    }
+
+    #[test]
+    fn test_from_u16_three_bytes() {
+        let vlq = MidiVlq::from(16_384u16);
+        assert_eq!(vlq.len(), 3);
+    }
+
+    #[test]
+    fn test_from_u32_four_bytes() {
+        let vlq = MidiVlq::try_from(268_435_454u32);
+        matches!(vlq, Ok(_));
+        let vlq = vlq.unwrap();
+        assert_eq!(vlq.len(), 4);
+    }
+
+    #[test]
+    fn test_from_u32_exceeded() {
+        let vlq = MidiVlq::try_from(268_435_455u32);
+        matches!(vlq, Err(_));
     }
 }
