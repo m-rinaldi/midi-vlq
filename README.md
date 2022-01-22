@@ -3,7 +3,8 @@
 The *Variable-Length Quantities* (VLQs) as defined by the Standard MIDI file format.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Unsafety](https://img.shields.io/badge/Unsafety-0%25-brightgreen.svg)](https://doc.rust-lang.org/std/keyword.unsafe.html``)
+[![Build Status](https://app.travis-ci.com/m-rinaldi/midi-vlq.svg?branch=main)](https://app.travis-ci.com/m-rinaldi/midi-vlq)
+[![Unsafety](https://img.shields.io/badge/Unsafety-0%25-brightgreen.svg)](https://doc.rust-lang.org/std/keyword.unsafe.html)
 
 
 ---
