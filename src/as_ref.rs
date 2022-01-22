@@ -1,4 +1,4 @@
-use crate::MidiVlq;
+use super::MidiVlq;
 
 impl AsRef<[u8]> for MidiVlq {
     fn as_ref(&self) -> &[u8] {

@@ -2,8 +2,11 @@
 name = "midi-vlq"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Jorge Rinaldi <jrg.rinaldi@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/m-rinaldi/midi-vlq"
+description = "Variable-Length Quantity for the MIDI file format"
+keywords = ["vlq", "midi", "integer", "encoding", "variable-length"]
 
 [dependencies]
-local_vec = "0.4.0"
+local_vec = "0.5"

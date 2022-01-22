@@ -1,5 +1,4 @@
-use crate::MidiVlq;
-use super::VlqBuf;
+use super::{MidiVlq, VlqBuf};
 use super::ux::{U7, U14, U21, U28};
 
 fn infallibly_encode(val: u16) -> MidiVlq {
@@ -101,8 +100,16 @@ impl TryFrom<u32> for MidiVlq {
 }
 
 impl From<MidiVlq> for u32 {
-    fn from(_vlq: MidiVlq) -> u32 {
-        todo!()
+    fn from(vlq: MidiVlq) -> u32 {
+        let slc = vlq.as_ref();
+        debug_assert!(slc.len() <= 4);
+
+        let mut val = 0u32;
+        for byte in slc {
+            val = (val << 7) | (0b0111_1111 & byte) as u32;
+        }
+        debug_assert_eq!(val & 0xf000_0000, 0);
+        val
     }
 }
 
@@ -114,6 +121,7 @@ mod tests {
         let vlq = MidiVlq::from(0_u8);
         assert_eq!(vlq.len(), 1);
         assert_eq!(vlq.as_ref(), [0]);
+        assert_eq!(vlq.to_u32(), 0u32);
 
         let vlq = MidiVlq::from(127_u8);
         assert_eq!(vlq.len(), 1);
@@ -132,26 +140,26 @@ mod tests {
     fn test_from_u8_two_bytes() {
         let vlq = MidiVlq::from(128_u8);
         assert_eq!(vlq.len(), 2);
-        assert_eq!(vlq.as_ref(), [0b1000_0001, 0]);
+        assert_eq!(vlq, [0b1000_0001, 0]);
 
         let vlq = MidiVlq::from(255_u8);
         assert_eq!(vlq.len(), 2);
-        assert_eq!(vlq.as_ref(), [0b1000_0001, 0b0111_1111]);
+        assert_eq!(vlq, [0b1000_0001, 0b0111_1111]);
     }
 
     #[test]
     fn test_from_u16_two_bytes() {
         let vlq = MidiVlq::from(256u16);
         assert_eq!(vlq.len(), 2);
-        assert_eq!(vlq.as_ref(), [0b1000_0010, 0]);
+        assert_eq!(vlq, [0b1000_0010, 0]);
 
         let vlq = MidiVlq::from(511u16);
         assert_eq!(vlq.len(), 2);
-        assert_eq!(vlq.as_ref(), [0b1000_0011, 0b0111_1111]);
+        assert_eq!(vlq, [0b1000_0011, 0b0111_1111]);
 
         let vlq = MidiVlq::from(16_383u16);
         assert_eq!(vlq.len(), 2);
-        assert_eq!(vlq.as_ref(), [0b1111_1111, 0b0111_1111]);
+        assert_eq!(vlq, [0b1111_1111, 0b0111_1111]);
     }
 
     #[test]
@@ -172,5 +180,16 @@ mod tests {
     fn test_from_u32_exceeded() {
         let vlq = MidiVlq::try_from(268_435_455u32);
         matches!(vlq, Err(_));
+    }
+
+    #[test]
+    fn test_from_into_u32_max() {
+        const MAX: u32 = 0x0fff_ffff;
+        let vlq = MidiVlq::try_from(MAX);
+        assert!(vlq.is_ok());
+        let vlq = vlq.unwrap();
+        assert_eq!(vlq.len(), 4);
+        assert_eq!(vlq, [0xff, 0xff, 0xff, 0x7f]);
+        assert_eq!(vlq.to_u32(), MAX);
     }
 }

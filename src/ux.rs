@@ -4,7 +4,7 @@ pub struct U14(u16);
 pub struct U21(u32);
 pub struct U28(u32);
 
-// TODO write a macro instead
+// TODO write with a macro instead
 // TODO trait instead (e.g., MaxBound)?
 impl U7 {
     pub const MAX: u32 = (1 << 7) - 1;
